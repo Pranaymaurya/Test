@@ -87,3 +87,18 @@ curl -X POST http://localhost:5000/api/seed
 ---
 
 This completes the setup instructions for running the LMS project with a local MongoDB database.
+Main Features of the LMS Web Application
+🔐 User Authentication:
+Users can register and log in securely with proper form validation.
+
+🧑‍💼 Data Persistence:
+User data, including profile and progress, is saved in MongoDB for future use.
+
+📚 Course Management:
+Users can view and interact with sample courses (more features can be added).
+
+🖥️ Clean UI:
+The application features a responsive user interface built with modern tools (like Vite, React).
+
+🔄 Session Handling:
+Logged-in users remain authenticated during their session for a smoother experience.
