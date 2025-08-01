@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, BookOpen, Plus, User, GraduationCap } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'https://test-2vr0.onrender.com/api';
 
 const AdminDashboard = () => {
   // Get user info from localStorage
