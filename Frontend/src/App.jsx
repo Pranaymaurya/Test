@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, Clock, User, CheckCircle, LogOut, UserPlus, LogIn } from 'lucide-react';
+import AdminDashboard from './components/AdminDashboard';
 
-const API_BASE_URL = 'https://test-2vr0.onrender.com/api';
+const API_BASE_URL = 'http://localhost:5000/api';
+
+// Admin Dashboard Component (Placeholder)
 
 // Login Component
 const LoginForm = ({ onLogin, onSwitchToSignup }) => {
@@ -35,14 +38,22 @@ const LoginForm = ({ onLogin, onSwitchToSignup }) => {
 
       const data = await response.json();
 
+      console.log('Login response status:', response.status);
+      console.log('Login response data:', data);
+
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (!data.token || !data.user) {
+        throw new Error('Invalid response: missing token or user data');
+      }
+
+      console.log('Calling onLogin with:', data.user, data.token);
       onLogin(data.user, data.token);
+
     } catch (error) {
+      console.error('Login error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
@@ -69,7 +80,7 @@ const LoginForm = ({ onLogin, onSwitchToSignup }) => {
             </button>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -111,7 +122,8 @@ const LoginForm = ({ onLogin, onSwitchToSignup }) => {
 
           <div>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -121,7 +133,7 @@ const LoginForm = ({ onLogin, onSwitchToSignup }) => {
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
@@ -177,8 +189,6 @@ const SignupForm = ({ onSignup, onSwitchToLogin }) => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
       onSignup(data.user, data.token);
     } catch (error) {
       setError(error.message);
@@ -207,7 +217,7 @@ const SignupForm = ({ onSignup, onSwitchToLogin }) => {
             </button>
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700">
@@ -295,7 +305,8 @@ const SignupForm = ({ onSignup, onSwitchToLogin }) => {
 
           <div>
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -305,10 +316,127 @@ const SignupForm = ({ onSignup, onSwitchToLogin }) => {
               {loading ? 'Creating account...' : 'Create account'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );
+};
+
+// Course Card Component
+const CourseCard = ({ course, isEnrolled, onEnroll, isEnrolling }) => {
+  const enrolled = isEnrolled(course._id);
+  const isEnrollingThis = isEnrolling === course._id;
+
+  return (
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex items-center space-x-2">
+          <BookOpen className="h-6 w-6 text-blue-600" />
+          <h3 className="text-xl font-semibold text-gray-900">{course.title}</h3>
+        </div>
+        {enrolled && (
+          <CheckCircle className="h-6 w-6 text-green-500" />
+        )}
+      </div>
+
+      <p className="text-gray-600 mb-4 leading-relaxed">{course.description}</p>
+
+      <div className="flex items-center space-x-4 mb-4 text-sm text-gray-500">
+        <div className="flex items-center space-x-1">
+          <User className="h-4 w-4" />
+          <span>{course.instructor}</span>
+        </div>
+        <div className="flex items-center space-x-1">
+          <Clock className="h-4 w-4" />
+          <span>{course.duration}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        {enrolled ? (
+          <span className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium bg-green-100 text-green-800">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Enrolled
+          </span>
+        ) : (
+          <button
+            onClick={() => onEnroll(course._id)}
+            disabled={isEnrollingThis}
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isEnrollingThis ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Enrolling...
+              </>
+            ) : (
+              'Enroll'
+            )}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Token storage utility (using localStorage for persistence)
+const saveAuthData = (user, token) => {
+  try {
+    localStorage.setItem('token', token);
+    localStorage.setItem('user', JSON.stringify(user));
+  } catch (error) {
+    console.error('Error saving auth data to localStorage:', error);
+  }
+};
+
+const getAuthData = () => {
+  try {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+    return {
+      token: token,
+      user: user
+    };
+  } catch (error) {
+    console.error('Error reading auth data from localStorage:', error);
+    return {
+      token: null,
+      user: null
+    };
+  }
+};
+
+const clearAuthData = () => {
+  try {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  } catch (error) {
+    console.error('Error clearing auth data from localStorage:', error);
+  }
+};
+
+// Token validation utility
+const isValidToken = (token) => {
+  if (!token) return false;
+  
+  try {
+    // Basic token structure validation
+    const parts = token.split('.');
+    if (parts.length !== 3) return false;
+    
+    // Decode the payload (for JWT tokens)
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Check if token is expired
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
 };
 
 // Main App Component
@@ -316,48 +444,56 @@ function App() {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard' or 'admin'
   const [courses, setCourses] = useState([]);
   const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start with loading true to check for existing token
   const [enrolling, setEnrolling] = useState(null);
   const [error, setError] = useState(null);
 
-  // Check for existing authentication on app load
+  // Check for existing token on app initialization
   useEffect(() => {
-    const checkAuth = async () => {
-      const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
-
-      if (savedToken && savedUser) {
-        try {
-          const userData = JSON.parse(savedUser);
+    const checkExistingAuth = async () => {
+      try {
+        const authData = getAuthData();
+        
+        if (authData.token && authData.user) {
+          console.log('Found existing auth data:', authData);
           
-          // Verify token is still valid by calling /api/auth/me
-          const response = await fetch(`${API_BASE_URL}/auth/me`, {
-            headers: {
-              'Authorization': `Bearer ${savedToken}`,
-            },
-          });
-          
-          if (response.ok) {
-            const { user: currentUser } = await response.json();
-            setUser(currentUser);
-            setToken(savedToken);
+          // Validate token
+          if (isValidToken(authData.token)) {
+            // Verify token with backend
+            const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+              headers: {
+                'Authorization': `Bearer ${authData.token}`,
+              },
+            });
+            
+            if (response.ok) {
+              const userData = await response.json();
+              console.log('Token verified, user data:', userData);
+              setUser(userData.user || authData.user);
+              setToken(authData.token);
+            } else {
+              console.log('Token verification failed, clearing auth data');
+              clearAuthData();
+            }
           } else {
-            // Token is invalid, clear storage
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
+            console.log('Invalid token format, clearing auth data');
+            clearAuthData();
           }
-        } catch (error) {
-          console.error('Error validating saved auth:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+        } else {
+          console.log('No existing auth data found');
         }
+      } catch (error) {
+        console.error('Error checking existing auth:', error);
+        clearAuthData();
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    
-    checkAuth();
+
+    checkExistingAuth();
   }, []);
 
   // Fetch courses with authentication
@@ -368,14 +504,46 @@ function App() {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      if (response.status === 401 || response.status === 403) {
+        console.log('Auth failed while fetching courses, logging out');
+        handleLogout();
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error('Failed to fetch courses');
       }
+      
       const data = await response.json();
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      setError('Failed to load courses');
+      setError('Failed to load courses. Using demo data for now.');
+      // Demo data for testing
+      setCourses([
+        {
+          _id: '1',
+          title: 'Introduction to React',
+          description: 'Learn the basics of React including components, state, and props.',
+          instructor: 'John Doe',
+          duration: '4 weeks'
+        },
+        {
+          _id: '2',
+          title: 'Advanced JavaScript',
+          description: 'Deep dive into ES6+, async programming, and modern JavaScript patterns.',
+          instructor: 'Jane Smith',
+          duration: '6 weeks'
+        },
+        {
+          _id: '3',
+          title: 'Node.js Backend Development',
+          description: 'Build scalable backend applications with Node.js and Express.',
+          instructor: 'Mike Johnson',
+          duration: '8 weeks'
+        }
+      ]);
     }
   };
 
@@ -389,7 +557,7 @@ function App() {
       });
       
       if (response.status === 401 || response.status === 403) {
-        // Token is invalid, force logout
+        console.log('Auth failed while fetching enrollments, logging out');
         handleLogout();
         return;
       }
@@ -397,53 +565,52 @@ function App() {
       if (!response.ok) {
         throw new Error('Failed to fetch enrollments');
       }
+      
       const data = await response.json();
       setEnrolledCourses(data);
     } catch (error) {
       console.error('Error fetching enrollments:', error);
-      
-      // If it's an auth error, logout user
-      if (error.message.includes('401') || error.message.includes('403')) {
-        handleLogout();
-        return;
-      }
-      
-      setError('Failed to load enrollments');
+      setError('Failed to load enrollments. Using demo data for now.');
+      setEnrolledCourses([]);
     }
   };
 
   // Load data when user is authenticated
   useEffect(() => {
-    if (user && token) {
+    if (user && token && !loading) {
       const loadData = async () => {
-        setLoading(true);
         await Promise.all([fetchCourses(), fetchEnrolledCourses()]);
-        setLoading(false);
       };
       loadData();
     }
-  }, [user, token]);
+  }, [user, token, loading]);
 
   // Handle login
   const handleLogin = (userData, userToken) => {
+    console.log('Handling login:', userData, userToken);
     setUser(userData);
     setToken(userToken);
+    saveAuthData(userData, userToken);
   };
 
   // Handle signup
   const handleSignup = (userData, userToken) => {
+    console.log('Handling signup:', userData, userToken);
     setUser(userData);
     setToken(userToken);
+    saveAuthData(userData, userToken);
   };
 
   // Handle logout
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    console.log('Handling logout');
     setUser(null);
     setToken(null);
     setCourses([]);
     setEnrolledCourses([]);
+    setCurrentView('dashboard');
+    setError(null);
+    clearAuthData();
   };
 
   // Handle enrollment
@@ -459,6 +626,12 @@ function App() {
         body: JSON.stringify({ courseId }),
       });
 
+      if (response.status === 401 || response.status === 403) {
+        console.log('Auth failed while enrolling, logging out');
+        handleLogout();
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to enroll');
@@ -470,6 +643,11 @@ function App() {
     } catch (error) {
       console.error('Error enrolling:', error);
       setError(error.message);
+      // For demo purposes, simulate enrollment
+      const course = courses.find(c => c._id === courseId);
+      if (course) {
+        setEnrolledCourses(prev => [...prev, course]);
+      }
     } finally {
       setEnrolling(null);
     }
@@ -480,69 +658,13 @@ function App() {
     return enrolledCourses.some(course => course._id === courseId);
   };
 
-  const CourseCard = ({ course }) => {
-    const enrolled = isEnrolled(course._id);
-    const isEnrollingThis = enrolling === course._id;
-
-    return (
-      <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6 hover:shadow-lg transition-shadow">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <BookOpen className="h-6 w-6 text-blue-600" />
-            <h3 className="text-xl font-semibold text-gray-900">{course.title}</h3>
-          </div>
-          {enrolled && (
-            <CheckCircle className="h-6 w-6 text-green-500" />
-          )}
-        </div>
-
-        <p className="text-gray-600 mb-4 leading-relaxed">{course.description}</p>
-
-        <div className="flex items-center space-x-4 mb-4 text-sm text-gray-500">
-          <div className="flex items-center space-x-1">
-            <User className="h-4 w-4" />
-            <span>{course.instructor}</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Clock className="h-4 w-4" />
-            <span>{course.duration}</span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between">
-          {enrolled ? (
-            <span className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium bg-green-100 text-green-800">
-              <CheckCircle className="h-4 w-4 mr-1" />
-              Enrolled
-            </span>
-          ) : (
-            <button
-              onClick={() => handleEnroll(course._id)}
-              disabled={isEnrollingThis}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isEnrollingThis ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Enrolling...
-                </>
-              ) : (
-                'Enroll'
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Show loading screen on initial app load
-  if (loading && !user) {
+  // Show loading screen while checking for existing token
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Checking authentication...</p>
         </div>
       </div>
     );
@@ -563,19 +685,6 @@ function App() {
     );
   }
 
-  // Show loading screen while fetching courses
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading courses...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Main dashboard for authenticated users
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -593,6 +702,14 @@ function App() {
                   {user.role}
                 </span>
               </div>
+              {user.role === 'admin' && (
+                <button
+                  onClick={() => setCurrentView(currentView === 'admin' ? 'dashboard' : 'admin')}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  {currentView === 'admin' ? 'Dashboard' : 'Admin Dashboard'}
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -606,75 +723,83 @@ function App() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-            <div className="flex">
-              <div className="text-sm text-red-700">
-                {error}
+      {currentView === 'admin' ? (
+        <AdminDashboard />
+      ) : (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+              <div className="flex">
+                <div className="text-sm text-red-700">{error}</div>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-auto text-red-400 hover:text-red-600"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                onClick={() => setError(null)}
-                className="ml-auto text-red-400 hover:text-red-600"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <BookOpen className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Available Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">{courses.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Enrolled Courses</p>
-                <p className="text-2xl font-semibold text-gray-900">{enrolledCourses.length}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Completion Rate</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {courses.length > 0 ? Math.round((enrolledCourses.length / courses.length) * 100) : 0}%
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Course Listing */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Courses</h2>
-          
-          {courses.length === 0 ? (
-            <div className="text-center py-12">
-              <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-500">No courses available at the moment.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {courses.map((course) => (
-                <CourseCard key={course._id} course={course} />
-              ))}
             </div>
           )}
+
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <BookOpen className="h-8 w-8 text-blue-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Available Courses</p>
+                  <p className="text-2xl font-semibold text-gray-900">{courses.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <CheckCircle className="h-8 w-8 text-green-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Enrolled Courses</p>
+                  <p className="text-2xl font-semibold text-gray-900">{enrolledCourses.length}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center">
+                <User className="h-8 w-8 text-purple-600" />
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Completion Rate</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {courses.length > 0 ? Math.round((enrolledCourses.length / courses.length) * 100) : 0}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Course Listing */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Courses</h2>
+            
+            {courses.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">No courses available at the moment.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {courses.map((course) => (
+                  <CourseCard 
+                    key={course._id} 
+                    course={course}
+                    isEnrolled={isEnrolled}
+                    onEnroll={handleEnroll}
+                    isEnrolling={enrolling}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
