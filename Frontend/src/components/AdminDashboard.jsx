@@ -4,6 +4,10 @@ import { Users, BookOpen, Plus, User, GraduationCap } from 'lucide-react';
 const API_BASE_URL = 'http://localhost:5000/api';
 
 const AdminDashboard = () => {
+  // Get user info from localStorage
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const isInstructor = user.role === 'instructor';
+  
   const [dashboardData, setDashboardData] = useState({
     totalStudents: 0,
     totalCourses: 0,
@@ -19,7 +23,7 @@ const AdminDashboard = () => {
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
-    instructor: '',
+    instructor: isInstructor ? user.name : '',
     duration: '',
   });
 
@@ -130,9 +134,11 @@ const AdminDashboard = () => {
             <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
               <GraduationCap className="w-7 h-7 text-white" />
             </div>
-            Admin Dashboard
+            {isInstructor ? 'Instructor Dashboard' : 'Admin Dashboard'}
           </h1>
-          <p className="text-gray-600 text-lg">Manage users and courses efficiently</p>
+          <p className="text-gray-600 text-lg">
+            {isInstructor ? 'Manage your courses and students' : 'Manage users and courses efficiently'}
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -236,10 +242,11 @@ const AdminDashboard = () => {
                   name="role" 
                   value={userForm.role} 
                   onChange={(e) => handleInputChange(e, setUserForm)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${isInstructor ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                  disabled={isInstructor}
                 >
                   <option value="student">Student</option>
-                  <option value="instructor">Instructor</option>
+                  {!isInstructor && <option value="instructor">Instructor</option>}
                 </select>
               </div>
 
@@ -297,9 +304,10 @@ const AdminDashboard = () => {
                   name="instructor" 
                   value={courseForm.instructor} 
                   onChange={(e) => handleInputChange(e, setCourseForm)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${isInstructor ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                   placeholder="Enter instructor name"
                   required 
+                  readOnly={isInstructor}
                 />
               </div>
 

@@ -65,7 +65,7 @@ router.post('/api/auth/signup', async (req, res) => {
   }
 });
 
-// Admin route to add instructors and students
+// Admin/Instructor route to add users
 router.post('/api/admin/users', authenticateToken, adminMiddleware, async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
@@ -73,6 +73,11 @@ router.post('/api/admin/users', authenticateToken, adminMiddleware, async (req, 
     // Validation
     if (!name || !email || !password || !role) {
       return res.status(400).json({ error: 'Name, email, password, and role are required' });
+    }
+
+    // Restrict instructors from creating other instructors or admins
+    if (req.user.role === 'instructor' && role !== 'student') {
+      return res.status(403).json({ error: 'Instructors can only create student accounts' });
     }
 
     if (!['student', 'instructor'].includes(role)) {
@@ -100,7 +105,7 @@ router.post('/api/admin/users', authenticateToken, adminMiddleware, async (req, 
     await user.save();
 
     res.status(201).json({
-      message: 'User created successfully by admin',
+      message: `User created successfully by ${req.user.role}`,
       user: {
         id: user._id,
         name: user.name,
